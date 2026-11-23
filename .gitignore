@@ -1,0 +1,11 @@
+# Android
+manager/local.properties
+manager/.gradle/
+manager/build/
+manager/app/build/
+manager/.kotlin/
+manager/app/src/main/assets/ghost/*.log
+
+# misc
+*.log
+.DS_Store
