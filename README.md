@@ -23,6 +23,17 @@ per-app 授权弹窗、没有模块系统。
 - Android 10 上 Shizuku 的 shell 拿不到 fscrypt keyring（见 `docs/TECHNICAL.md`），因此启动改用
   每次开机一条 adb 命令拉起的小守护进程；之后 App 内一键起 root
 
+## 文档
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)：组件、broker、服务、App、守护进程、生命周期
+- [docs/EXPLOIT.md](docs/EXPLOIT.md)：漏洞、KernelSnitch、写原语、SELinux/fscrypt、HKIP、失败模式
+- [docs/API.md](docs/API.md)：邮箱命令、glsrv 线协议、gl-su CLI、守护进程文件
+- [docs/OPERATIONS.md](docs/OPERATIONS.md)：安装、每次开机、故障处理、MT、白名单、日志
+- [docs/BUILD.md](docs/BUILD.md)：NDK/AGP/JDK 版本、构建、校验和
+- [docs/TECHNICAL.md](docs/TECHNICAL.md)：技术结论速览（含 Shizuku keyring 结论）
+- [docs/FAQ.md](docs/FAQ.md)：常见问题
+- [SECURITY.md](SECURITY.md)：使用范围、合规、风险、数据与备份
+
 ## 支持环境
 
 - HONOR 9X **HLK-AL00**，HarmonyOS **2.0.0.270**（Android 10，kernel **4.14.116**）
@@ -115,7 +126,14 @@ scripts/glboot.sh        adb 启动守护进程（心跳/触发/状态）
 scripts/sync_assets.sh   把二进制同步进 App assets
 manager/                 Android 管理器工程（Kotlin，AGP 8.13）
 prebuilt/                gl-su / glsrv / ghost1 / keyprobe / 管理器 APK
-docs/TECHNICAL.md        技术说明与关键结论
+docs/ARCHITECTURE.md     架构、组件、生命周期
+docs/EXPLOIT.md          利用链与内核细节
+docs/API.md              邮箱/线协议/CLI/守护进程文件
+docs/OPERATIONS.md       使用、故障处理、MT、白名单
+docs/BUILD.md            构建与版本
+docs/TECHNICAL.md        技术结论速览
+docs/FAQ.md              常见问题
+SECURITY.md              安全/合规/风险/备份
 ```
 
 ## 已知限制
@@ -133,6 +151,12 @@ docs/TECHNICAL.md        技术说明与关键结论
 - KernelSnitch：`mm_struct` slab 泄露思路
 - CVE-2026-43499
 - Shizuku、MT 管理器仅作为互操作对象；本项目**不包含、不再分发**它们的 APK
+
+## 商标与非官方声明
+
+HONOR、HUAWEI、HarmonyOS 等名称是其各自权利人的商标。本项目是非官方、独立的
+安全研究项目，与 HONOR/Huawei 无关联，也未获其认可。仓库不包含任何厂商固件、
+内核镜像、SELinux 策略二进制或第三方 APK。
 
 ## License
 
