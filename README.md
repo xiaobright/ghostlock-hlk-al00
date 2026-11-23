@@ -1,8 +1,11 @@
 # GhostLock HLK-AL00
 
 HONOR 9X（HLK-AL00）/ HarmonyOS 2.0.0.270 / Linux 4.14.116 上的**运行期临时 root** 研究项目：
-基于 GhostLock（futex PI 逻辑漏洞，CVE-2026-43499）的零 slide 利用链，配套 KernelSU 风格的管理器 App、
-root 服务、MT 管理器自定义 su 集成，以及 adb 启动守护进程。
+基于 GhostLock（futex PI 逻辑漏洞，CVE-2026-43499）的零 slide 利用链，配套一个极简 root 管理器 App
+（状态 / root 终端 / uid 白名单 / 日志）、root 服务、MT 管理器自定义 su 集成，以及 adb 启动守护进程。
+
+定位是**研究原型 + 极简管理器**，不是 KernelSU/Magisk 的替代品：没有内核侧授权、没有
+per-app 授权弹窗、没有模块系统。
 
 > **仅用于安全研究与自己的设备。**
 > 本项目不修改 boot/vbmeta/super 等任何分区，root 只存在于内存，重启完全回滚。
@@ -121,7 +124,7 @@ docs/TECHNICAL.md        技术说明与关键结论
 - exploit 概率性 panic；没有跨重启自动重试（守护进程随重启消失，需要 PC 重新拉起）。
 - 触发文件位于 App 外部目录，具备存储权限的其他应用理论上可重复触发 exploit（**不能获得 su**，
   su 仍受 uid 白名单约束）。
-- 未实现 KernelSU 式的 per-app 授权弹窗，目前是 uid 白名单。
+- 与 KernelSU/Magisk 不同，未实现 per-app 授权弹窗；目前是 uid 白名单。
 - Shizuku 启动路径不可用（原因见上）。
 
 ## 参考与致谢
