@@ -5,10 +5,14 @@
 模块系统。root 只存在于一个驻留进程和它的子进程里。
 
 **Q：为什么不用 Shizuku 启动？**
-Shizuku 的 shell 会话能看到 fscrypt keyring，但没有 possessor 权限：
-带 dest 的 SEARCH/LINK 全部 EACCES，exploit 拿不到密钥（ENOKEY）。adb shell
-则正常。Android 10 上 Shizuku 本身也要每次开机用 adb 启动，所以本项目用
-同样依赖 PC 的 adb 守护进程。详见 [TECHNICAL.md](TECHNICAL.md)。
+不是“Shizuku 必然没有 keyring”，而是取决于启动路径：从 adb/adbd 启动（USB、TCP、
+Android 11+ 无线配对）的 Shizuku shell 会继承共享的用户会话 keyring，`_ses` 里有
+`fscrypt`；从 App 内或 root 方式启动时可能在另一条 session，`_ses` 不含 keyring，
+exploit 才会 `readn=0`/ENOKEY。`keyprobe` 的 `search_dest_session` EACCES 是目标
+keyring 写权限问题，adb shell 也有，不能当 possessor 判据。
+本机 Android 10 没有无线配对（11+），pre-11 的“无线”仍需 PC/root 开 `adb tcpip`，
+所以 Shizuku 省不掉 PC；本项目用启动路径可控、依赖最少的 adb 守护进程。
+详见 [TECHNICAL.md](TECHNICAL.md)。
 
 **Q：为什么每次开机都要在电脑上跑一条命令？**
 root 是内存态，重启回滚；守护进程必须由 adb 会话启动才能拿到正确的
@@ -23,8 +27,9 @@ KernelSnitch 的时序判据会被 CPU boost/高负载干扰（`t_empty=0`）；
 另有一条 stamp-loss panic 路径。都是已知的：重试/重启后再试。
 
 **Q：为什么 FINAL 了但 /data/data 还是 EACCES/ENOKEY？**
-T 没拿到 fscrypt keyring。正常路径是 adb 守护进程；如果用了 Shizuku 启动，
-一定失败。看 `keys ... readn=`（0 就是没拿到）。
+T 没拿到 fscrypt keyring。正常路径是 adb 守护进程；如果用 Shizuku 启动，确认它是
+从 adb/adbd 启动的（App 内/root 启动的 session 可能不含 keyring）。看
+`keys ... readn=`（0 就是没拿到）和 `keys sess=... search=...`。
 
 **Q：为什么 glsrv 有时起不来？**
 serve 里的 `setcon adbd` 可能瞬时 EACCES。守护进程会每 20s 重试，最多 12 次；

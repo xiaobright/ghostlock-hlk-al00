@@ -44,7 +44,7 @@
 | su 客户端 | `service/gl-su.c` | 调用者的 uid/域 | 连接服务、转发命令/交互 |
 | 守护进程 | `scripts/glboot.sh` | adb shell（uid 2000） | 每次开机拉起 exploit + serve |
 | 管理器 | `manager/` | untrusted_app（uid 10193） | 状态/终端/授权/日志/触发 |
-| 诊断 | `service/keyprobe.c` | 调用者 | 对比 keyring 权限（Shizuku 结论） |
+| 诊断 | `service/keyprobe.c` | 调用者 | 对比 keyring 权限/启动会话 |
 
 ## 3. broker 与邮箱
 
@@ -109,7 +109,8 @@ broker main 是普通 shell creds，可以随进程结束，但没必要。
   `gltrigger`，轮询 `glstatus`（最多 420s）；不在线则弹窗显示 adb 命令（可复制）。
 - App assets 内嵌 `ghost1/glsrv/gl-su/start_root.sh/glboot.sh`；首次启动 Root
   或首次点击时解压到自己的外部目录，守护进程从这里同步到 `/data/local/tmp`。
-- Shizuku 代码/Provider 仍保留，但启动不用它（原因见
+- Shizuku 代码/Provider 仍保留，但启动不用它：Android 10 没有免 PC 的无线启动，
+  且本项目选择启动路径可控的 adb 守护进程（keyring 结论见
   [TECHNICAL.md](TECHNICAL.md) 第 3 节）。
 
 ## 7. 守护进程 glboot.sh

@@ -20,8 +20,9 @@ per-app 授权弹窗、没有模块系统。
 - 常驻 root 服务：abstract socket `@ghostlock`（adbd 标签，普通应用可连）、uid 白名单、fork/exec 命令
 - su 客户端 `gl-su`（`shell_exec` 标签），支持 `-c` 与交互模式；MT 管理器可直接把它当自定义 su
 - 管理器 App：root 状态、root 终端、uid 授权管理、日志
-- Android 10 上 Shizuku 的 shell 拿不到 fscrypt keyring（见 `docs/TECHNICAL.md`），因此启动改用
-  每次开机一条 adb 命令拉起的小守护进程；之后 App 内一键起 root
+- 启动用每次开机一条 adb 命令拉起的小守护进程（继承 adbd 的 session keyring）；之后 App 内一键起 root。
+  Shizuku 的 shell 只有在从 adb/adbd 启动时才带 fscrypt keyring，且 Android 10 没有免 PC 的无线启动
+  （无线配对是 Android 11+），见 [docs/TECHNICAL.md](docs/TECHNICAL.md)
 
 ## 文档
 
@@ -79,14 +80,24 @@ per-app 授权弹窗、没有模块系统。
 - `serve` 的 `setcon adbd` 偶发瞬时 EACCES；守护进程每 20 秒自动重试，最多 12 次（约 4 分钟）。
 - 若 App 显示“需先启动 adb 守护进程”，按弹窗命令执行，再点“重新检测”。
 
-## 为什么不用 Shizuku 启动
+## 关于 Shizuku 启动
 
-实测 Shizuku 的 shell 会话能看到 `fscrypt` keyring（无 dest 的 SEARCH 成功），但**没有 possessor
-权限**：带 dest 的 SEARCH/LINK 全部 EACCES。exploit 因此拿不到密钥（ENOKEY），连
-`/data/local/tmp` 的 glsrv 都无法 exec。同一 boot 的 adb shell 则完全正常。
+Shizuku 的 shell 是否有 fscrypt keyring，取决于**服务端的启动路径**，不是 uid：
 
-Android 10 上 Shizuku 本身也要每次开机用 adb 启动，所以本项目改为同样依赖 PC 的 adb 守护进程，
-但 keyring 路径是正确的。详见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+- 从 adb/adbd 启动（USB、TCP、Android 11+ 无线配对）时，shell 继承共享的用户会话 keyring，
+  `_ses` 里有 `fscrypt`，exploit 的两阶段交接可用。本机实测 USB 与 TCP 两种传输的 `_ses`
+  serial 和 fscrypt 子项完全一致（`adb tcpip` 重启 adbd 后 serial 都不变）。
+- 从 App 内或 root 方式启动时，服务端可能在另一条 session 里；此时 main 的 `_ses` 不含
+  `fscrypt`（日志 `search=-1/126`），T 只能在 `_uid_ses.0` 里看到 keyring 但 main 无 possessor
+  （`linkring=-1/13`），exploit 最终 `readn=0`/ENOKEY。
+
+另外，`keyprobe` 里 `search_dest_session` 的 EACCES 是“目标 keyring 写权限”问题，adb shell
+也会出现，不能当作 possessor 的判据。
+
+本机是 Android 10：Shizuku 的无线配对（Wireless Debugging）是 Android 11+；pre-11 的“无线”
+只是 `adb tcpip`，仍需要 PC（或 root/system）先打开，且 `service.adb.tcp.port` 重启即失。
+所以对本机，Shizuku 并不能省掉 PC；本项目选择 adb 守护进程，理由是**启动路径可控、依赖最少**，
+而不是“Shizuku 必然没有 keyring”。详见 [docs/TECHNICAL.md](docs/TECHNICAL.md) 第 3 节。
 
 ## 构建
 
@@ -143,7 +154,7 @@ SECURITY.md              安全/合规/风险/备份
 - 触发文件位于 App 外部目录，具备存储权限的其他应用理论上可重复触发 exploit（**不能获得 su**，
   su 仍受 uid 白名单约束）。
 - 与 KernelSU/Magisk 不同，未实现 per-app 授权弹窗；目前是 uid 白名单。
-- Shizuku 启动路径不可用（原因见上）。
+- Android 10 没有免 PC 的 Shizuku 无线启动；从 adb 启动时 keyring 正常，但本项目仍用 adb 守护进程。
 
 ## 参考与致谢
 

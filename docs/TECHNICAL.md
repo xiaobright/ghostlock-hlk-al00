@@ -55,20 +55,28 @@
      拿不到 possessor 位。
    - 密钥是 logon 类型，payload 用户态不可读，不能复制；只能交接 keyring。
 
-## 3. 为什么 Shizuku 不能启动 root
+## 3. Shizuku 启动路径与 fscrypt keyring
 
-在同一台设备上做了对照（`service/keyprobe.c`）：
+fscrypt keyring 不是挂在 uid 上，而是用户会话级共享的 keyring；只要进程从
+adbd 的 shell 链上 fork/exec，它就继承 `_ses`（含 `keyring fscrypt`）。
 
-- adb shell（正常 `_ses`）：`search_dest_session` 成功，exploit FINAL 日志
-  `readn=4`、`child0='keyring;0;0;3f010000;fscrypt'`、`tmp` 探测成功、`/data/data` 可读。
-- Shizuku shell（`newProcess` 出来的会话）：session 里能看到 fscrypt keyring
-  （无 dest 的 SEARCH 返回 serial），但带 dest 的 SEARCH 与 LINK 全部 **EACCES**；
-  exploit FINAL 日志 `readn=0`、`tmp=-1/126`（ENOKEY）；serve 的 `sh` 连
-  `/data/local/tmp/glsrv` 都无法 exec（读文件 ENOKEY）。
+实测（同一台机器，`service/keyprobe.c` + Shizuku `rish`）：
 
-结论：Shizuku 新建的 session keyring 只是“挂着” fscrypt keyring，不是 possessor，
-T 无法通过链接获得密钥。Android 10 上 Shizuku 本身也需要每次开机用 adb 启动，
-因此本项目改用 adb 会话启动的守护进程（同样依赖 PC），但 keyring 路径正确。
+- 从 adb 启动的 Shizuku（USB 或 TCP）：`rish` 出来的 shell `_ses` serial 与
+  adb shell 相同，`fscrypt` 子项相同；`adb tcpip 5555` 重启 adbd 后 serial
+  都不变（keyring 是共享的用户会话级，不是 adbd 实例私有）。
+- 从 App 内/root 方式启动的 Shizuku：服务端可能在另一条 session；失败日志
+  `sess=319751070 search=-1/126 mlink=-1/13 ... join=0/0 mysess=958474601
+  readn=0`，`kproc` 显示 fscrypt logon key 在 `_uid_ses.0`，T 侧 `nd0=982838717/0`
+  能找到，但 main 的 `_ses` 不含 fscrypt、link 失败（`linkring=-1/13`）。
+- `keyprobe` 的 `search_dest_session` 在 adb shell 同样 EACCES（目标 session
+  keyring 写权限），不是 possessor 判据；要看 main 的 `_ses` 是否含 `fscrypt`
+  以及能否 SEARCH/LINK 到 T 的 K2。
+
+结论：Shizuku 的 shell **可以**带 fscrypt keyring，条件是服务端由 adbd shell
+启动；Android 10 没有免 PC 的无线启动（Wireless Debugging 配对是 11+，pre-11 的
+“无线”只是 `adb tcpip`，需要 PC/root 先开），所以本项目仍用 adb 守护进程：
+启动路径可控、依赖最少。不是“Shizuku 必然没有 keyring”。
 
 ## 4. root 服务（glsrv）与客户端（gl-su）
 
@@ -112,7 +120,7 @@ T 无法通过链接获得密钥。Android 10 上 Shizuku 本身也需要每次�
   输出 `uid=0 ... context=u:r:shell:s0`。
 - MT 自定义 su（`/data/local/tmp/gl-su`）可对 `/data/adb`、`/data/data`
   建/删/改；并发（MT 常驻 shell + 第二客户端）正常。
-- Shizuku 路径的失败证据见第 3 节。
+- Shizuku 启动路径的对照与更正后的结论见第 3 节。
 
 ## 7. 风险与边界
 
