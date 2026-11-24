@@ -14,6 +14,11 @@ keyring 写权限问题，adb shell 也有，不能当 possessor 判据。
 所以 Shizuku 省不掉 PC；本项目用启动路径可控、依赖最少的 adb 守护进程。
 详见 [TECHNICAL.md](TECHNICAL.md)。
 
+**Q：有没有办法完全不用电脑？**
+Android 10 没有 Wireless Debugging 配对；pre-11 的 `adb tcpip` 需要 PC/root 先打开。
+仓库里记录了一条“一次性 PC 授权 + 用户态 CVE 设属性 + `adb_enabled` 重启 adbd + libadb 连本机”
+的未验证思路，阻塞点和风险见 [PC-FREE-ADB.md](PC-FREE-ADB.md)。本项目不实现、不推荐。
+
 **Q：为什么每次开机都要在电脑上跑一条命令？**
 root 是内存态，重启回滚；守护进程必须由 adb 会话启动才能拿到正确的
 session keyring。之后 App 内是一键。

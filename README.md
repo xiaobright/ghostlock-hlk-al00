@@ -33,6 +33,7 @@ per-app 授权弹窗、没有模块系统。
 - [docs/BUILD.md](docs/BUILD.md)：NDK/AGP/JDK 版本、构建、校验和
 - [docs/TECHNICAL.md](docs/TECHNICAL.md)：技术结论速览（含 Shizuku keyring 结论）
 - [docs/FAQ.md](docs/FAQ.md)：常见问题
+- [docs/PC-FREE-ADB.md](docs/PC-FREE-ADB.md)：Android 10 免 PC 启动的未验证思路（研究参考）
 - [SECURITY.md](SECURITY.md)：使用范围、合规、风险、数据与备份
 
 ## 支持环境
@@ -155,6 +156,7 @@ SECURITY.md              安全/合规/风险/备份
   su 仍受 uid 白名单约束）。
 - 与 KernelSU/Magisk 不同，未实现 per-app 授权弹窗；目前是 uid 白名单。
 - Android 10 没有免 PC 的 Shizuku 无线启动；从 adb 启动时 keyring 正常，但本项目仍用 adb 守护进程。
+- 免 PC 启动的可行性/阻塞点见 [docs/PC-FREE-ADB.md](docs/PC-FREE-ADB.md)（未验证，不推荐）。
 
 ## 参考与致谢
 

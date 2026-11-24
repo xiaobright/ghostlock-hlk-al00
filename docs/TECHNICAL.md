@@ -78,6 +78,9 @@ adbd 的 shell 链上 fork/exec，它就继承 `_ses`（含 `keyring fscrypt`）
 “无线”只是 `adb tcpip`，需要 PC/root 先开），所以本项目仍用 adb 守护进程：
 启动路径可控、依赖最少。不是“Shizuku 必然没有 keyring”。
 
+免 PC 启动的未验证思路（CVE-2024-31317 + `adb_enabled` + libadb）见
+[PC-FREE-ADB.md](PC-FREE-ADB.md)；仅作研究参考，本项目不实现。
+
 ## 4. root 服务（glsrv）与客户端（gl-su）
 
 - 服务端 socket 必须让普通应用可 `connectto`。设备策略里应用域只对 **adbd** 等少数标签
